@@ -1,0 +1,916 @@
+---
+title: 'CWRU DSCI351-351m-451: Lab Exercise LE2'
+author: 'Prof.:Roger French, TA: Raymond Wieser, Sameera Nalin Venkat, Mingxuan Li'
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: yes
+  word_document:
+    toc: yes
+    toc_depth: '6'
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+    number_sections: yes
+    toc_depth: 6
+    highlight: tango
+subtitle: Timeseries Analysis, ggplot2, Text Mining
+urlcolor: blue
+---
+
+<!--
+# Script Name: 2008-351-351m-451-LE2-NAME.Rmd
+# Purpose: This is an Rmd LE file to do your LE in
+# Authors: Roger H. French
+# License: All rights reserved.
+##########
+# Latest Changelog Entires:
+# v0.00.01 - 1501cwru-dsci-NAMEIT.RMD - Roger French started this blank Rmd
+##########
+
+# Rmd code goes below the comment marker!
+-->
+
+\setcounter{section}{2}
+\setcounter{subsection}{0}
+
+### LE2, 7 points, 3 questions. 
+
+Summary of points (use Cntrl + Shift + O for seeing sub-questions easily):-
+
+LE2-1: 2,5 points
+
+  - LE2-1a: 1 point
+  - LE2-1b: 1.5 points
+  
+LE2-2: 1.5 points
+
+  - LE2-2a, LE2-2b: 0.25 points each
+  - LE2-2c, LE2-2d: 0.5 points each
+  
+LE2-3: 3 points
+
+  - LE2-3a, LE2-3b: 0.5 point each
+  - LE2-3c: 1 point
+  - LE2-3d: 0.5 point
+  - LE2-3e: 1 point
+
+
+#### Lab Exercise (LE) 2
+
+--------------------------------------------
+
+## LE2-1. Time series analysis: (2.5 points)
+
+Time series are a common type of data, 
+
+  - consisting of measurements that are continuous over a time range. 
+
+In this project we will be using classical decomposition 
+
+  - to perform analysis on a time series.
+
+First as an introduction to decomposition we will have a quick example.
+
+### LE2-1a (1 point)
+
+  - What is the decomposition of a time-series?
+  
+Answer - It is a way by which we can analyse a data over time.
+Time series decomposition involves thinking of a series as a combination of level, trend,          seasonality, and noise components.
+Decomposition provides a useful abstract model for thinking about time series generally and for   better understanding problems during time series analysis and forecasting.
+  
+  - The AirPassengers data set of airline passengers every month for 12 years
+
+
+```{r, include = FALSE}
+# Load in required libraries, readr for csv files
+library(readr)
+library(tidyverse)
+library(datasets)
+```
+
+```{r}
+
+
+## playground
+# data(AirPassengers)
+# is.ts(AirPassengers)
+# class(AirPassengers)
+# start(AirPassengers)
+# end(AirPassengers)
+# frequency(AirPassengers)
+# boxplot(AirPassengers ~ cycle(AirPassengers))
+# plot(diff(log(AirPassengers)))
+# AP <- AirPassengers
+# View(AP)
+
+# data.frame(as.integer(rownames(AirPassengers)))
+
+# playground ends
+```
+
+
+
+
+```{r}
+
+data(AirPassengers) #Loads specified data sets, or list the available data sets.
+AirPassengers
+AirPassengers <- as.data.frame(AirPassengers)   #converting a ts object to a dataframe ;this means # # loosing out on all the timeinformation
+is.data.frame(AirPassengers)
+# head(AirPassengers)
+
+```
+
+  - Plot the total time series of air passengers 
+  - What do you notice about the plot?
+  
+  
+
+```{r}
+  plot(AirPassengers)
+  # length(AirPassengers)
+  # frequency(AirPassengers)
+  
+  # 
+  # abline(reg = lm(AP ~ time(AP)))
+  # plot(aggregate(AP,FUN =mean))
+  # 
+  # summary(AirPassengers)
+```
+ANSWER (what do you notice about the plot?) -> There is a periodicity in every year, and the amplitude keeps on increasing every year.
+
+  - Use the ts() function in base R 
+    - to define AirPassengers as a time series with a yearly trend 
+  - If the data is taken monthly, 
+    - what will the frequency (points per season) of a yearly season be? 
+    
+    
+
+```{r}
+# Create a time series object with a yearly trend
+?ts
+
+ap_y <- ts(data = AirPassengers, frequency = 12)
+ap_y
+
+
+```
+ANSWER (what will the frequency (points per season) of a yearly season be? ) ->
+if there are 4 seasons in a year of 12 months, then each season will have 3 points
+
+
+
+  - Use the decompose() function 
+    -to decompose the time series and remove the seasonality
+  - The type for this time series is multiplicative
+  - Plot the decomposed time series, what do you notice about the trend?
+  
+  
+
+```{r}
+# playground
+?decompose
+
+# View after decomposition into base components
+
+ap_y_d <-decompose(ap_y,type = "multiplicative")
+plot(ap_y_d$x)
+plot(ap_y_d$trend)
+plot(ap_y_d$seasonal)
+# ap_y_d2 <- (ap_y / ap_y_d$seasonal)   #is this correct ?
+# plot(ap_y_d2)
+
+
+
+```
+
+```{r}
+
+# Removing seasonality
+
+
+ap2 <-decompose(ap_y, type = "multiplicative")
+ap3 <- ap_y /ap2$seasonal # removing seasonal
+
+plot(ap3)
+
+
+
+```
+ANSWER (what do you notice about the trend?) ->
+  The trend of passengers keeps on increasing as the years pass.
+
+  - Isolate the trend and plot the trend on top of the raw data with the seasonality included
+  - How well does the trend represent the data?
+
+```{r}
+# Plotting simulated valued that is trend and seasonal vs actual
+
+simulated <- (ap2$trend * ap2$seasonal)
+plot( simulated, type="l", col="red" )
+lines(ap_y, col="green")
+
+
+```
+ANSWER (how well does the trend represent the data?) ->
+
+The trend very closely follows the actual data
+
+### LE2-1b (1.5 points)
+
+Now lets try this with a real world time series. 
+We'll be using one month of power and weather data from a solar power plant.
+
+The data set variables are as follows:
+
+  - time: The timestamp at which the data was taken
+  - ghir: Global Horizontal Irradiance from a sensor at the site, 
+    - the power from the sunlight over an area normal to the surface of the earth $(Watts/m^2)$
+  - iacp: The AC power from the power plant $(kW)$
+  - temp: The air temperature $(Celsius)$ 
+  - ghi_solargis: The Global Horizontal Irradiance, not from a sensor, 
+    - but predicted using weather modeling $(Watts/m^2)$
+  - clear: A logical indicating whether the sky was "clear" during measurement, 
+    - determined by comparing the ghi and ghi_solargis data
+  - ratio: the ratio of the Global Horizontal Irradiance 
+    - and the Plane of Array Irradiance (the irradiance normal to the surface of a tilted module)
+
+The power from solar panels is dependent on the irradiance hitting it, 
+
+  - so a power reading is often meaningless without a corresponding irradiance measurement.
+
+It is useful to have multiple sources of irradiance measurements. 
+
+Sensors on the ground are useful because 
+
+  - they strongly represent the irradiance that is hitting the module; 
+  - however, sensors can begin to drift if not cleaned or calibrated properly. 
+  - An unstable sensor can render an entire data set useless.
+
+To combat this, we also have irradiance data from SolarGIS, 
+
+  - a company that uses satellite images to model and predict 
+  - the irradiance at the surface of the earth. 
+
+  - Plot the irradiance and power for the first week of data, 
+    - how does the irradiance look compared to 
+      - what you would expect from the trend of sunlight? 
+    - How well does the power and irradiance match up?
+
+```{r}
+
+# input1 <-read.csv("data/2108-351-351m-451-LE1-solectria-data-final.csv", header=TRUE)
+# 
+# is.ts(input1) # check if it is a timeseries
+# summary(input1)
+
+# plot(input1$ghi_solargis,type = "l")
+# plot(input1$iacp, type ="l")
+# plot(input1$ghir, type = "l")
+
+
+
+
+```
+
+
+
+```{r}
+######################################################
+# Read in the data and get a look at the structure
+input1 <-read.csv("data/2108-351-351m-451-LE1-solectria-data-final.csv", header=TRUE)
+head(input1)
+
+######################################################
+# Find total length of dataset
+dim(input1)[0]
+
+######################################################
+# Find the time interval
+difftime(input1$time[2], input1$time[1],
+         units = "mins")
+
+######################################################
+# Plot the irradiance and power for the first week
+class(input1$time)
+# as.character(input1$time)
+x <- input1$time
+# y <- format(input1$time,  "%X" )
+# z <- strptime(x ,format = "", tz = "")
+z <- as.Date(x, "%Y-%m-%d")
+input1$date <-z
+# head(input1)
+
+# inputf1 -> input1[]
+dt_fst_wk <- subset(input1, date>="2012-06-01" & date<="2012-06-07")
+
+
+
+
+
+
+
+
+##############
+
+
+# Entire dataset is in 15-minute increment
+
+# Power plot over time
+timedt <- dt_fst_wk$time
+pwr <- dt_fst_wk$iacp
+
+plot(timedt,  pwr , col="blue", type ="l",main = "power vs time" ,pch="o", lty=1 )
+
+# Both sources of irradiance
+sen_ghi <- dt_fst_wk$ghir
+gis_ghi <- dt_fst_wk$ghi_solargis
+
+plot(timedt,  sen_ghi , col="green", type ="l", main="Sources of Irradiance",
+ylab=" sensor in black and solargis in red" )
+lines(timedt, gis_ghi , col="red", type ="l")
+
+
+
+
+
+
+
+
+  
+```
+
+```{r}
+
+# #### Playground
+# ## locale-specific version of date()
+# format(Sys.time(), " %a %b %d %X %Y %Z")
+# # "Mon Sep 13 11:02:51 AM 2021 EDT"
+# 
+# ## time to sub-second accuracy (if supported by the OS)
+# format(Sys.time(), "%H:%M:%OS3")
+# 
+# (x <- strptime(c("2006-01-08 10:07:52", "2006-08-07 19:33:02"),
+#                "%Y-%m-%d %H:%M:%S", tz = "EST5EDT"))
+# attr(x, "tzone")
+# 
+# ## read in date info in format 'ddmmmyyyy'
+# ## This will give NA(s) in some non-English locales; setting the C locale
+# ## as in the commented lines will overcome this on most systems.
+# ## lct <- Sys.getlocale("LC_TIME"); Sys.setlocale("LC_TIME", "C")
+# x <- c("1jan1960", "2jan1960", "31mar1960", "30jul1960")
+# z <- strptime(x, "%d%b%Y")
+# ## Sys.setlocale("LC_TIME", lct)
+# class(z)
+# x <-"2012-06-01 00:00:00"
+# as.character(x)
+# y <- strptime(x, format = "", tz = "")
+# class(y)
+
+```
+ANSWER (how does the irradiance look compared to what you would expect from the trend of sunlight?) -> The irradiance captured by the sensor closely follows the solar gis values. 
+
+ANSWER (how well does the power and irradiance match up?) ->
+        The power and irradiance have the same period and they match up well.
+
+```{r}
+# All 3 lines on the same plot with a secondary axis
+
+ggplot() +
+  geom_line(aes(x= timedt, y = sen_ghi), group =1, color ="green")+
+  geom_line(aes(x= timedt, y = gis_ghi), group =1, color ="blue")+
+  geom_line(aes(x= timedt, y = pwr), group =1, color ="red")+
+  scale_y_continuous(sec.axis = sec_axis(trans =~./10, name ="pwr"))
+  
+
+
+# # par(mar = c(5, 4, 4, 4) + 0.3)              # Additional space for second y-axis
+# plot(timedt, pwr, pch = 16, col = "blue")              # Create first plot
+# par(new = TRUE)                             # Add new plot
+# plot(timedt, sen_ghi, pch = 17, col = "green",              # Create second plot without axes
+#      axes = FALSE, xlab = "", ylab = "")
+# lines(timedt, gis_ghi , col="red", type ="l")
+# axis(side = 4, at = pretty(range(sen_ghi)))      # Add second axis
+# mtext("sen_ghi", side = 4, line = 3)
+
+
+```
+
+- Use the ts() functions and the stlplus() function from the stlplus package 
+
+  - to decompose the sensor and SolarGIS irradiance and the power 
+    - for the whole month. 
+  -  Plot each of the decompositions, what do you notice?
+
+```{r}
+# think carefully about the frequency you'll need to define for this data
+# what is the seasonal component to this data and how many data points make up a season?
+# use s.window = "periodic" for the stlplus function
+library(stlplus)
+?stlplus()
+
+
+#convert data to timeseries objects
+sen_ghi <- ts(data = input1$ghir,  frequency =4*24) ## change this
+gis_ghi <- ts(data = input1$ghi_solargis , frequency = 4*24)
+pwr <- ts(data = input1$iacp, frequency = 4*24)
+
+?
+sen_ghi
+
+#decompose using stlplus
+sg_d <- stlplus(sen_ghi,s.window = "periodic")
+gg_d <- stlplus(gis_ghi,s.window = "periodic")
+pwr_d <- stlplus(pwr,s.window = "periodic")
+
+
+#plots1 - 4
+plot(sg_d$data$raw, type="l")
+plot(sg_d$data$seasonal, type="l")
+plot(sg_d$data$trend, type="l")
+plot(sg_d$data$remainder, type="l")
+
+#plots5-8
+plot(gg_d$data$raw, type="l")
+plot(gg_d$data$seasonal, type="l")
+plot(gg_d$data$trend, type="l")
+plot(gg_d$data$remainder, type="l")
+
+
+#plots5-8
+plot(pwr_d$data$raw, type="l")
+plot(pwr_d$data$seasonal, type="l")
+plot(pwr_d$data$trend, type="l")
+plot(pwr_d$data$remainder, type="l")
+
+
+
+
+
+```
+ANSWER (what do you notice about the decompositions?) ->
+
+  - Isolate the trends for the 3 time series you just decomposed 
+    - and build a linear model for each one.
+  - Compare the models to each other, how are they different?
+
+```{r}
+
+y <- sg_d$data$trend
+x <- sg_d$time
+plot(sg_d$data$trend, type="l")
+
+model1 <- lm(y ~ x)
+plot(x,y)
+abline(model1, lwd =3, col ="red")
+
+summary(model1)
+
+y <- gg_d$data$trend
+x <- gg_d$time
+plot(gg_d$data$trend, type="l")
+
+model2 <- lm(y ~ x)
+plot(x,y)
+abline(model2, lwd =3, col ="red")
+
+summary(model2)
+
+y <- pwr_d$data$trend
+x <- pwr_d$time
+plot(pwr_d$data$trend, type="l")
+
+model3 <- lm(y ~ x)
+plot(x,y)
+abline(model3, lwd =3, col ="red")
+
+summary(model3)
+
+```
+
+
+ANSWER (compare the models to each other and how are they different?) ->
+      both sensor sunlight data and Gis show an increase in the years with almost the same slope, even though power has increased over the years, it has risen slowly.
+
+  - Solar panel degradation leads to less power output over time 
+    - at the same irradiance conditions.
+  - Based on the linear models you found for the trends of power and irradiance, 
+    - is this system degrading over time?
+  - How do the sensor GHI and the SolarGIS GHI compare to power?
+  
+ANSWER (is this system degrading over time based on linear models?) ->
+        Yes, since power has risen slower than the growth rate of irradiance, it is likely that the system has degraded over time.
+
+ANSWER (how do the sensor GHI and the SolarGIS GHI compare to power?) ->
+        The sensor GHI and Solar GIS GHI, have grown the same way, it is likely that the sensors             are working well.
+
+--------------------------------------------
+
+## LE2-2. ggplot2: (1.5 points)
+
+ggplot2 is a package for making plots from data. 
+
+It provides tools for making complex and detailed graphs. 
+
+ggplot2 builds graphs in layers, 
+
+  - where first the graph must be specified, 
+  - then layers are added to the plot using the '+' operator.
+
+In this example nothing appears in the plot
+
+```{r}
+library(ggplot2)
+data("mpg")
+head(mpg)
+
+ggplot(data = mpg, aes(x = cyl, y = hwy))
+
+```
+
+This is because we did not define the next layer, 
+
+  - all we did was define some kind of graph between cylinders and highway mpg
+
+Since we have already defined the data at the beginning, 
+
+  - we don't need to specify it in the layer
+
+```{r}
+
+ggplot(data = mpg, aes(x = cyl, y = hwy)) +
+  geom_point()
+
+# or a different layer
+
+# here we have to define cyl as the group for each box
+ggplot(data = mpg, aes(x = cyl, y = hwy)) +
+  geom_boxplot(aes(group = cyl))
+
+```
+
+We can add additional information about showing data in our plot 
+
+  - by adding parameters into the aesthetics (aes()) function
+
+```{r}
+
+ggplot(data = mpg, aes(x = cty, y = hwy)) +
+  geom_point(aes(size = displ))
+
+```
+
+We can also add on additional layers if we want to, 
+
+  - keep in mind ordering is important. 
+  
+The data for each layer can be defined per layer 
+
+  - this is important if you're trying to add multiple data sets to a plot
+
+```{r}
+
+ggplot() +
+  geom_point(data = mpg, aes(x = cty, y = hwy)) +
+  geom_smooth(data = mpg, aes(x = cty, y = hwy), method = "lm")
+
+```
+
+Now it's your turn to make some plots
+
+  - All plotting must be done using ggplot2, 
+  - Any data manipulation must be done with dplyr pipelines 
+    - running into the ggplot funciton
+
+### LE2-2a (0.25 points) 
+2a: Use the mtcars data set, 
+  
+  - plot mpg vs displacement and color by cylinders
+ 
+```{r}
+
+data("mtcars")
+head(mtcars)
+ggplot(data = mtcars, aes(x = mpg, y = disp)) + geom_point(aes(color = as.factor(cyl)))
+
+?mtcars
+
+
+
+```
+
+### LE2-2b (0.25 points)
+2b: Create a boxplot of the horsepower readings for each cylinder count, 
+
+  - show the data points on top of the plot
+ 
+```{r}
+ggplot(data = mtcars, aes(x = cyl, y = hp)) +
+  geom_boxplot(aes(group = cyl))
+
+```
+
+### LE2-2c (0.5 points)
+2c: Plot a histogram of the number cars in each carburetor count group
+
+```{r}
+ggplot(mtcars, aes(carb)) +
+  geom_histogram(binwidth =1)
+```
+
+### LE2-2d (0.5 points)
+2d: Explain why these two plots look different, 
+
+  - why does the color and key change between them?
+ 
+```{r}
+
+ggplot(data = mpg, aes(x = cty, y = hwy)) +
+  geom_point(aes(color = cyl, size = displ))
+
+ggplot(data = mpg, aes(x = cty, y = hwy)) +
+  geom_point(aes(color = factor(cyl), size = displ))
+
+```
+
+ANSWER (explain why these two plots look different) ->
+plot 1 : Shows gradual change in the cty - indicating it as a continuous value
+plot 2 : treats cty as a discreet values and gives each value of cty a different color to emphasise demarcation
+
+ANSWER (why does the color and key change between them?) ->
+The first one is more for a continuos cty and the second one is for a discreet cty
+
+--------------------------------------------
+
+## LE2-3. Text Mining of Song Lyrics: (3 points)
+
+- Complete the given problems
+- dplyr, ggplot, and pipes and pipelines are highly recommended
+- We will be using the Tidytext package to aid with our text mining
+- The dataset for this assignment is a collection of the information and lyrics from every top 100 billboard song since 1965
+
+### LE2-3a (0.5 points)
+
+- Load in the data set
+- Print the lyrics of the #4 song from 1988
+- Show the top 20 artists with the most hits, which artist has the most total top 100 hits?
+
+```{r}
+################################################ load in data
+musi_inp1 = read.csv("data/billboard_lyrics_1964-2015.csv")
+# View(musi_inp1)
+###################################################\
+library(dplyr)
+sr <-musi_inp1[musi_inp1$Rank == 4 & musi_inp1$Year == 1988,]
+# filter(musi_inp1, Rank == 4 , Year == 1988)
+sr$Lyrics
+
+###############################################
+
+music <- tbl_df(musi_inp1)
+
+top_artist <-music %>%
+  group_by(Artist) %>%
+  tally()%>%
+  arrange(desc(n))
+
+top_artist$Artist[1:20]
+top_artist$Artist[1]
+
+
+
+
+```
+
+ANSWER -> The artist that has the most total top 100 hits is ___madonna________
+
+### LE2-3b (0.5 points)
+
+- Build a histogram of the amount of times artists appear on the top hits billboard, what does the trend look like, what does it suggest about 1 hit wonders?
+
+ANSWER -> There are many artists, more than 1500, who appear very few times in the top 100 hits.
+There is only 1 artist who has appeared upto 35 times.
+
+```{r}
+
+
+hitsvsartist <- top_artist %>%
+  group_by(n)%>%
+  tally(name = "n2")
+hitsvsartist
+  
+  
+ggplot(top_artist, aes(n)) +
+  geom_histogram(binwidth =1)
+
+
+```
+
+### LE2-3c (1 point)
+
+- Lets do a lyrical comparison between 2 top artists, Elton John and Eminem
+- First, filter the main data set to only the 2 given artists (you can make them seperate data frames or keep them together, your call)
+- Use the unnest_tokens() function from tidytext to split the lyrics up so that each word has its own row
+- Show the top 10 most commonly used words for each artist
+
+```{r}
+
+# convert factor to character
+music$Lyrics <- as.character(music$Lyrics)
+
+
+mus_ej <- music %>%
+  filter(Artist =="elton john" )
+head(mus_ej)
+
+mus_emnm <- music %>%
+  filter(Artist =="eminem")
+head(mus_emnm)
+
+
+
+# break lyrics to words
+ej_words <- mus_ej %>%
+  unnest_tokens(output = word, input = Lyrics)
+
+head(ej_words)
+
+
+emnm_words <- mus_emnm %>%
+  unnest_tokens(output = word, input = Lyrics)
+
+head(emnm_words)
+
+# top 10 words for each artist
+ej_top_10 <- ej_words %>%
+  group_by(word)%>%
+  tally(name = "word_count")%>%
+  arrange(desc(word_count))
+
+print("Elton john uses thesa a lot")
+ej_top_10$word[1:10]
+
+em_top_10 <- emnm_words %>%
+  group_by(word)%>%
+  tally(name = "word_count")%>%
+  arrange(desc(word_count))
+
+print("eminem uses thesa a lot")
+em_top_10$word[1:10]
+  
+
+```
+
+- It should be clear that most of these are not significantly meaningful words and should be removed, we can remove them using the stop_words dataframe provided with the tidytext package (hint: look at dplyr anti_join())
+
+- Remove them and show the top ten remaining words for each artist
+
+```{r}
+
+data("stop_words")
+
+usable_ej_10 <- ej_top_10 %>%
+  anti_join(stop_words, by = "word")
+
+print("elton john uses these words most")
+usable_ej_10$word[1:10]
+  
+
+print("eminem uses these words most")
+usable_em_10 <- em_top_10%>%
+  anti_join(stop_words, by = "word")
+
+usable_em_10$word[1:10]
+
+
+
+```
+
+### LE2-3d (0.5 points)
+
+- Build a word cloud of the lyrics for each artist, find an R package that will help you with this
+- Compare and contrast the word clouds
+- Did the stop_words dataframe work well to remove non-meaningful words?
+
+```{r}
+
+library(wordcloud)
+
+usable_ej <- ej_words %>%
+  anti_join(stop_words, by = "word")
+usable_em <- emnm_words %>%
+  anti_join(stop_words, by = "word")
+
+wordcloud(words = usable_ej$word,  min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark2"))
+wordcloud(words = ej_words$word,  min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark2"))
+
+wordcloud(words = usable_em$word,  min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark2"))
+wordcloud(words = emnm_words$word,  min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark2"))
+
+
+# wordcloud(words = usable_em_10$word, max.words = 10 )
+
+
+
+```
+
+ANSWER (compare and contrast the word clouds) ->
+Both Eminem and Elton john use "don't" a lot. 
+
+ANSWER (did stop_words work well to remove non-meaningful words?) ->
+The stop words well to remove non- meaningful words.
+Even though word cloud tries to remove non- meanigful words, in the case of eminem, if we use his raw words without stop words filter a lot of  non-meaningful words like "get, he's, yeah " appear
+
+### LE2-3e (1 point)
+
+- The tidytext package gives us the ability to run sentiment analysis as well
+- There are multiple sentiment methods available but let's just use positive and negative sentiment
+
+```{r}
+# library(tidytxt)
+bing <- get_sentiments("bing")
+head(bing)
+
+
+
+```
+
+- What is the bing dataframe?
+
+ANSWER (definition of bing dataframe) -> 
+  The bing dataframe : is a data set of many words  witha a sentiment attached to each word.
+
+- Pull out the "positive" and "negative" words for each artist (hint: dplyr inner_join())
+- For each song per artist, determine the next positive or negative sentiment, there are several ways to do this - the most straightforward being assign a 1 to a positive lyric and -1 to a negtive lyric then sum them together for each song
+- Make a bar plot of the net sentiment of each song for each artist, make these plots high quality as well
+  - Properly name the axes and title each plot
+  - Color by whether the song is overall positive or negative
+  - rotate the x-axis names so long song titles are legible
+  - Arrange the bars in ascending or descending order
+
+```{r}
+
+## words used by each artist, and assigning it with a sentiment using bing
+usable_ej_sent <-  merge(x = usable_ej, y = bing, by = "word")
+usable_ej_sent <- usable_ej_sent %>%
+  mutate(sen_value = if_else( usable_ej_sent$sentiment == "negative", -1 , 1, 0))
+
+usable_ej_sent <-usable_ej_sent %>% 
+  group_by(Song)%>%
+  summarise(net_Sen = sum(sen_value))
+
+usable_ej_sent <- usable_ej_sent %>%
+  arrange(desc(net_Sen))
+
+usable_em_sent <-  merge(x = usable_em, y = bing, by = "word")
+usable_em_sent <- usable_em_sent %>%
+  mutate(sen_value = if_else( usable_em_sent$sentiment == "negative", -1 , 1, 0))
+
+usable_em_sent <- usable_em_sent %>% 
+  group_by(Song)%>%
+   summarise(net_Sen = sum(sen_value))
+
+
+p1 <- ggplot(usable_ej_sent, aes( x = reorder(Song, net_Sen), y = net_Sen, fill = net_Sen < 0)) + 
+  geom_bar(stat = "identity") + ggtitle("Song sentiment \n by Elton john songs") + theme(plot.title=element_text(face="bold")) +
+   xlab("Songs") + ylab("Count")+
+    scale_fill_manual(values = c("blue", "red"),
+                    labels=c('positive song','negative song'))+
+  labs(fill='net sentiment')+
+  coord_flip()
+p1
+
+p2 <- ggplot(usable_em_sent, aes( x = reorder(Song, net_Sen), y = net_Sen, fill = net_Sen < 0)) + 
+  geom_bar(stat = "identity") + ggtitle("Song sentiment \n by Eminem songs") +   theme(plot.title=element_text(face="bold")) +
+   xlab("Songs") + ylab("Count")+
+    scale_fill_manual(values = c( "red"),
+                    labels= c('negative song')) +
+  labs(fill='net sentiment')+
+  coord_flip()
+p2
+
+
+
+
+```
+
+- What differences do you notice between the 2?
+
+ANSWER -> Elton John has songs that have both positive and negative sentiments.
+wheras Eminem has songs that are mostly negative.  
+
+- Based on what you might know about some of these songs, do you think the sentiment analysis gives a good indication of the positive of negative tone for each song or not?
+
+ANSWER -> It tallies with the general trend of most songs from Eminem but there are some songs like Lose yourself - which are widely known as motivational song, but due to the wording lose, it might be perceived as negative by the algorithem.
+
+- If you're interested, play around with this data set, see if your favorite artist is in here and see if you can find anything else
+
+Just a reminder: if you have questions, please ask them on Slack.  
+
+#### Links
+ 
+http://www.r-project.org 
+
+http://rmarkdown.rstudio.com/  
